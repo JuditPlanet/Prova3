@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ca">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Experiments Cognitius</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/jspsych.js"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/plugins/jspsych-survey-text.js"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/plugins/jspsych-timeline-variables.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css">
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; margin: 20px; }
+        input { padding: 10px; font-size: 16px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 10px; }
+        button { padding: 10px 15px; font-size: 16px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+    </style>
+</head>
+<body>
+    <h1>Experiments Cognitius</h1>
+    <div id="start-container">
+        <p><strong>Número identificatiu</strong></p>
+        <input type="text" id="participant-id" placeholder="Introdueix el teu número identificatiu" required>
+        <button onclick="startExperiment()">Iniciar</button>
+    </div>
+
+    <script>
+        function startExperiment() {
+            let participantId = document.getElementById("participant-id").value.trim();
+            let idRegex = /^[A-Z]{2,4}\d{4}$/i;  
+
+            if (!idRegex.test(participantId)) {
+                alert("Format incorrecte. Exemple: JPR1999");
+                return;
+            }
+
+            document.getElementById("start-container").style.display = "none";
+
+            let jsPsych = initJsPsych({
+                on_finish: function() {
+                    console.log("L'experiment ha finalitzat.");
+                }
+            });
+
+            let instruccionsVisualSearch = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: "<p><strong>Instruccions: Cerca Visual</strong></p><p>Prem qualsevol tecla per començar.</p>",
+                choices: "ALL_KEYS"
+            };
+
+            let visualSearchTrial = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: function() {
+                    return `<p>Troba la lletra objectiu: ${jsPsych.timelineVariable('target')}</p>`;
+                },
+                choices: ['t', 'q', 'y'],
+                data: { participant_id: participantId, correct_response: jsPsych.timelineVariable('correct_response') },
+                on_finish: function(data) {
+                    data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+                }
+            };
+
+            let visualSearchTimeline = {
+                timeline: [visualSearchTrial],
+                timeline_variables: [
+                    { target: 'T', correct_response: 't' },
+                    { target: 'Q', correct_response: 'q' },
+                    { target: 'Y', correct_response: 'y' }
+                ],
+                randomize_order: true
+            };
+
+            let instruccionsNBack = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: "<p><strong>Instruccions: 2-Back</strong></p><p>Prem qualsevol tecla per començar.</p>",
+                choices: "ALL_KEYS"
+            };
+
+            let nBackTrial = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: function() {
+                    return `<p>${jsPsych.timelineVariable('stimulus')}</p>`;
+                },
+                choices: ['a', 'b', 'c', 'd'],
+                data: { participant_id: participantId, correct_response: jsPsych.timelineVariable('correct_response') },
+                on_finish: function(data) {
+                    data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+                }
+            };
+
+            let nBackTimeline = {
+                timeline: [nBackTrial],
+                timeline_variables: [
+                    { stimulus: 'A', correct_response: 'a' },
+                    { stimulus: 'B', correct_response: 'b' },
+                    { stimulus: 'C', correct_response: 'c' },
+                    { stimulus: 'D', correct_response: 'd' }
+                ],
+                randomize_order: true
+            };
+
+            console.log("Iniciant experiment...");  // Depuració
+
+            jsPsych.run([
+                instruccionsVisualSearch,
+                visualSearchTimeline,
+                instruccionsNBack,
+                nBackTimeline
+            ]);
+        }
+    </script>
+</body>
+</html>
